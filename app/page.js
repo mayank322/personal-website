@@ -40,7 +40,7 @@ export default function Home() {
       <nav style={{ borderBottom: '0.5px solid #e5e2d9', padding: '18px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#faf9f7', position: 'sticky', top: 0, zIndex: 50 }}>
         <span style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#1a1714', letterSpacing: '-0.01em', fontWeight: 400 }}>Mayank Prasad</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          {['Blog', 'Projects', 'Media', 'Ideas', 'About'].map(link => (
+          {['Blog', 'Projects', 'Fitness', 'Media', 'Ideas', 'About'].map(link => (
             <a key={link} href={`/${link.toLowerCase()}`} style={{ fontSize: '13px', color: '#7a7670', textDecoration: 'none', transition: 'color 0.15s' }}
               onMouseEnter={e => e.target.style.color = '#1a1714'}
               onMouseLeave={e => e.target.style.color = '#7a7670'}>
