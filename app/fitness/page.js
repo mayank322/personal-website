@@ -154,27 +154,93 @@ function ActivityCard({ activity }) {
   );
 }
 
+
+// ─── Gym Workout Card ─────────────────────────────────────────────────────────
+
+function GymWorkoutCard({ workout }) {
+  const [expanded, setExpanded] = useState(false);
+
+  function fmtVolume(kg) {
+    if (!kg) return '0 kg';
+    return kg >= 1000 ? (kg / 1000).toFixed(1) + 't' : Math.round(kg) + ' kg';
+  }
+
+  return (
+    <div style={{ background: '#fff', border: '0.5px solid #e5e2d9', borderRadius: '8px', marginBottom: '8px', overflow: 'hidden' }}>
+      {/* Header */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{ padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '18px' }}>🏋️</span>
+          <div>
+            <p style={{ fontSize: '14px', color: '#1a1714', fontWeight: 500, marginBottom: '2px' }}>{workout.title}</p>
+            <p style={{ fontSize: '11px', color: '#c8c4ba' }}>{fmtDate(workout.date)}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: '13px', color: '#1a1714' }}>{fmtVolume(workout.totalVolume)}</p>
+            <p style={{ fontSize: '11px', color: '#c8c4ba' }}>{workout.exercises?.length} exercises · {fmtTime(workout.durationSeconds)}</p>
+          </div>
+          <span style={{ fontSize: '12px', color: '#c8c4ba', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block', transition: 'transform 0.2s' }}>▼</span>
+        </div>
+      </div>
+
+      {/* Exercises */}
+      {expanded && (
+        <div style={{ borderTop: '0.5px solid #f0efe8', padding: '12px 18px' }}>
+          {workout.exercises?.map((ex, i) => (
+            <div key={i} style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '13px', color: '#1a1714', fontWeight: 500, marginBottom: '6px' }}>{ex.name}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {ex.sets?.map((set, j) => (
+                  <div key={j} style={{
+                    fontSize: '11px', padding: '4px 10px', borderRadius: '20px',
+                    background: set.indicator === 'personal_record' ? '#E1F5EE' : '#f0efe8',
+                    color: set.indicator === 'personal_record' ? '#085041' : '#7a7670',
+                    border: set.indicator === 'personal_record' ? '0.5px solid #9FE1CB' : 'none',
+                  }}>
+                    {set.weight ? `${set.weight}kg` : ''}{set.weight && set.reps ? ' × ' : ''}{set.reps ? `${set.reps} reps` : ''}{set.durationSeconds ? `${set.durationSeconds}s` : ''}
+                    {set.indicator === 'personal_record' && ' 🏆'}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Fitness Page ────────────────────────────────────────────────────────
 
 export default function FitnessPage() {
   const [data, setData] = useState(null);
   const [goals, setGoals] = useState(null);
+  const [hevyData, setHevyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [activeTab, setActiveTab] = useState('cardio');
 
   useEffect(() => {
     async function load() {
       try {
-        const [stravaRes, goalsRes] = await Promise.all([
+        const [stravaRes, goalsRes, hevyRes] = await Promise.all([
           fetch('/api/strava'),
           fetch('/api/fitness-goals'),
+          fetch('/api/hevy'),
         ]);
         const stravaData = await stravaRes.json();
         const goalsData = await goalsRes.json();
+        const hevyData = await hevyRes.json();
         if (stravaData.error) throw new Error(stravaData.error);
         setData(stravaData);
         setGoals(goalsData.goals);
+        setHevyData(hevyData.error ? null : hevyData);
       } catch (e) {
         setError(e.message);
       }
@@ -325,6 +391,21 @@ export default function FitnessPage() {
                 filteredActivities.map(a => <ActivityCard key={a.id} activity={a} />)
               )}
             </section>
+
+            {/* Gym workouts from Hevy */}
+            {hevyData && (
+              <section style={{ marginTop: '40px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7a7670' }}>Gym workouts</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <StatCard label="This week" value={`${hevyData.weekly?.count || 0} sessions`} sub={`${Math.round((hevyData.weekly?.totalVolume || 0))} kg volume`} />
+                  </div>
+                </div>
+                {hevyData.workouts?.map(w => (
+                  <GymWorkoutCard key={w.id} workout={w} />
+                ))}
+              </section>
+            )}
           </>
         )}
       </div>
