@@ -23,8 +23,27 @@ export async function POST(request) {
 }
 
 const defaultGoals = {
-  race: { label: 'Sub-45 min 10K', targetSeconds: 2700, currentSeconds: null, raceDate: null },
-  weight: { label: 'Weight goal', target: 75, current: null, unit: 'kg' },
-  steps: { label: 'Daily steps', target: 10000, current: null },
-  yearlyKm: { label: 'Run 1000km in 2026', target: 1000, current: 0 },
+  race: {
+    label: '10K race goal',
+    targetMins: 50,
+    currentMins: null,
+    startMins: 70,
+    raceDate: '2026-10-18',
+  },
+  weight: {
+    label: 'Weight',
+    target: 72,
+    current: 77.5,
+    start: 77.5,
+    unit: 'kg',
+  },
+  steps: {
+    label: 'Steps today',
+    target: 10500,
+    current: null,
+  },
+  yearlyKm: {
+    label: 'Run 500km in 2026',
+    target: 500,
+  },
 };

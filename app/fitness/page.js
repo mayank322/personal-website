@@ -49,10 +49,20 @@ function sportColor(type) {
   return colors[type] || { bg: '#F1EFE8', text: '#444441', border: '#D3D1C7' };
 }
 
-// ─── Goal Card ────────────────────────────────────────────────────────────────
+// ─── Goal Card (editable) ─────────────────────────────────────────────────────
 
-function GoalCard({ label, current, target, unit, suffix, color }) {
-  const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+function GoalCard({ label, current, target, unit, color, editable, onSave, hint, weightLoss, startVal }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(current);
+
+  const numCurrent = parseFloat(current) || 0;
+  const numTarget = parseFloat(target) || 1;
+  const numStart = parseFloat(startVal) || numTarget + 1;
+  // For weight loss: progress = how much lost / how much to lose
+  const pct = weightLoss
+    ? Math.min(100, Math.max(0, ((numStart - numCurrent) / (numStart - numTarget)) * 100))
+    : Math.min(100, (numCurrent / numTarget) * 100);
+
   const colors = {
     purple: { bar: '#534AB7', bg: '#EEEDFE', text: '#3C3489' },
     teal: { bar: '#1D9E75', bg: '#E1F5EE', text: '#085041' },
@@ -61,21 +71,60 @@ function GoalCard({ label, current, target, unit, suffix, color }) {
   };
   const c = colors[color] || colors.purple;
 
+  function save() {
+    onSave && onSave(val);
+    setEditing(false);
+  }
+
   return (
-    <div style={{ background: '#fff', border: '0.5px solid #e5e2d9', borderRadius: '8px', padding: '16px' }}>
-      <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7a7670', marginBottom: '10px' }}>{label}</p>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
-        <span style={{ fontSize: '22px', fontWeight: 500, color: '#1a1714', fontFamily: 'Georgia, serif' }}>
-          {current !== null && current !== undefined ? current : '—'}
-        </span>
-        <span style={{ fontSize: '13px', color: '#7a7670' }}>{unit}</span>
-        <span style={{ fontSize: '12px', color: '#c8c4ba', marginLeft: 'auto' }}>/ {target}{unit}</span>
+    <div style={{ background: '#fff', border: editing ? `1px solid ${c.bar}` : '0.5px solid #e5e2d9', borderRadius: '8px', padding: '16px', transition: 'border 0.15s' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+        <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7a7670' }}>{label}</p>
+        {editable && !editing && (
+          <button onClick={() => { setVal(current); setEditing(true); }} style={{
+            fontSize: '10px', color: '#c8c4ba', background: 'none', border: 'none', cursor: 'pointer', padding: '0'
+          }}>Edit</button>
+        )}
+        {editing && (
+          <button onClick={() => setEditing(false)} style={{
+            fontSize: '10px', color: '#c8c4ba', background: 'none', border: 'none', cursor: 'pointer'
+          }}>Cancel</button>
+        )}
       </div>
+
+      {editing ? (
+        <div style={{ marginBottom: '10px' }}>
+          <p style={{ fontSize: '11px', color: '#7a7670', marginBottom: '6px' }}>{hint || 'Update value'}</p>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              autoFocus
+              style={{
+                flex: 1, height: '32px', border: '0.5px solid #e5e2d9', borderRadius: '6px',
+                padding: '0 10px', fontSize: '14px', outline: 'none', fontFamily: 'Georgia, serif'
+              }}
+            />
+            <span style={{ fontSize: '13px', color: '#7a7670' }}>{unit}</span>
+            <button onClick={save} style={{
+              fontSize: '12px', padding: '5px 12px', background: c.bar,
+              border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontWeight: 500
+            }}>Save</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
+          <span style={{ fontSize: '22px', fontWeight: 500, color: '#1a1714', fontFamily: 'Georgia, serif' }}>
+            {current !== null && current !== undefined && current !== '' ? current : '—'}
+          </span>
+          <span style={{ fontSize: '13px', color: '#7a7670' }}>{unit}</span>
+          <span style={{ fontSize: '12px', color: '#c8c4ba', marginLeft: 'auto' }}>/ {target}{unit}</span>
+        </div>
+      )}
+
       <div style={{ background: c.bg, borderRadius: '4px', height: '6px' }}>
-        <div style={{
-          background: c.bar, borderRadius: '4px', height: '6px',
-          width: `${pct}%`, transition: 'width 0.8s ease',
-        }} />
+        <div style={{ background: c.bar, borderRadius: '4px', height: '6px', width: `${pct}%`, transition: 'width 0.8s ease' }} />
       </div>
       <p style={{ fontSize: '11px', color: c.text, marginTop: '6px' }}>{pct.toFixed(0)}% complete</p>
     </div>
@@ -307,26 +356,65 @@ export default function FitnessPage() {
             {/* Goals */}
             {goals && (
               <section style={{ marginBottom: '40px' }}>
-                <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7a7670', marginBottom: '14px' }}>Goals</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7a7670' }}>Goals</p>
+                  {goals.race?.raceDate && (
+                    <p style={{ fontSize: '11px', color: '#c8c4ba' }}>Race day: {new Date(goals.race.raceDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '10px' }}>
                   <GoalCard
-                    label={goals.race?.label || 'Race goal'}
-                    current={goals.race?.currentSeconds ? Math.floor(goals.race.currentSeconds / 60) + ':' + String(goals.race.currentSeconds % 60).padStart(2, '0') : '—'}
-                    target="45:00"
-                    unit=""
+                    label="10K race goal"
+                    current={goals.race?.currentMins || '—'}
+                    target={goals.race?.targetMins || 50}
+                    unit=" min"
                     color="purple"
+                    editable={true}
+                    hint="Your current best 10K time (minutes)"
+                    weightLoss={true}
+                    startVal={goals.race?.startMins || 70}
+                    onSave={async (val) => {
+                      const updated = { ...goals, race: { ...goals.race, currentMins: val } };
+                      setGoals(updated);
+                      await fetch('/api/fitness-goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goals: updated }) });
+                    }}
                   />
                   <GoalCard
-                    label={goals.weight?.label || 'Weight'}
-                    current={goals.weight?.current}
-                    target={goals.weight?.target || 75}
+                    label="Weight"
+                    current={goals.weight?.current || '—'}
+                    target={goals.weight?.target || 72}
                     unit=" kg"
                     color="teal"
+                    editable={true}
+                    hint="Your current weight (kg)"
+                    weightLoss={true}
+                    startVal={goals.weight?.start || 77.5}
+                    onSave={async (val) => {
+                      const updated = { ...goals, weight: { ...goals.weight, current: val } };
+                      setGoals(updated);
+                      await fetch('/api/fitness-goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goals: updated }) });
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  <GoalCard
+                    label="Steps today"
+                    current={goals.steps?.current || '—'}
+                    target={goals.steps?.target || 10500}
+                    unit=""
+                    color="blue"
+                    editable={true}
+                    hint="Today's step count"
+                    onSave={async (val) => {
+                      const updated = { ...goals, steps: { ...goals.steps, current: val } };
+                      setGoals(updated);
+                      await fetch('/api/fitness-goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goals: updated }) });
+                    }}
                   />
                   <GoalCard
-                    label={goals.yearlyKm?.label || 'Yearly km'}
+                    label="Run 500km in 2026"
                     current={data.stats?.ytdRuns?.distance ? (data.stats.ytdRuns.distance / 1000).toFixed(0) : 0}
-                    target={goals.yearlyKm?.target || 1000}
+                    target={500}
                     unit=" km"
                     color="amber"
                   />
