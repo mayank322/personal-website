@@ -4,7 +4,7 @@ const WHATSAPP_API_VERSION = 'v21.0';
 
 async function sendWhatsAppMessage(to, text) {
   const url = `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
-  await fetch(url, {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
@@ -17,6 +17,9 @@ async function sendWhatsAppMessage(to, text) {
       text: { body: text },
     }),
   });
+  const data = await res.json().catch(() => null);
+  // TEMP DEBUG — remove once send is confirmed working.
+  console.log('WhatsApp send response:', res.status, JSON.stringify(data));
 }
 
 // Meta calls this once (GET) when you register the webhook, to verify you own the endpoint.
