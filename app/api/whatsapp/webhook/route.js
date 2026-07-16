@@ -37,6 +37,9 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
+    // TEMP DEBUG — remove once we confirm the payload shape.
+    console.log('WhatsApp webhook payload:', JSON.stringify(body));
+
     const entry = body.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
